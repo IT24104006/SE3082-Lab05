@@ -1,0 +1,22 @@
+Exercise 2: #pragma omp single
+
+How #pragma omp single works:
+Inside a parallel region, #pragma omp single marks a block of code that
+is supposed to be executed by EXACTLY ONE thread (arbitrarily chosen,
+whichever thread reaches the block first) - and not necessarily the
+master/thread 0.
+All other threads skip the block completely and continue past it.
+
+The output confirms this: only thread 7 printed "Inside Single # 7"
+and "Exiting Single";
+every other thread (0-6, 8-11)
+simply continued from printing "thread # N".
+Which thread gets to execute the single block is not fixed
+(it may vary between runs), and is determined purely by scheduling
+(i.e. whichever thread happens to arrive at the block first).
+
+Note: by default, #pragma omp single has an implicit barrier at the end
+of the block (i.e. every thread must wait until the single block finishes
+before any of them can continue and print "Hi again").
+(Adding nowait to the pragma would remove this implicit barrier if it were
+not needed.)
