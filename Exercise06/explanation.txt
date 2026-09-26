@@ -1,0 +1,32 @@
+Exercise 6a: Strip-mined array multiplication with OpenMP
+
+Approach:
+The array (N=1,000,000) is divided into fixed-size strips of STRIP_SIZE=8
+elements, chosen to align with common SIMD vector widths (8 doubles fits
+an AVX-512 register, or maps to 2 AVX/SSE vector operations). The outer
+loop over strips is parallelized with #pragma omp parallel for, so each
+thread processes whole strips; an inner #pragma omp simd hint encourages
+the compiler to vectorize within each strip. Correctness was verified at
+both the start (C[100]) and end (C[999999]) of the array, matching the
+expected values exactly.
+
+Result: the strip-mined parallel version (0.0169 sec) was SLOWER than a
+plain serial loop (0.0046 sec) - about 3.7x slower, not faster.
+
+Why: C[i] = A[i] * B[i] is an extremely lightweight, memory-bound
+operation - one multiply per element, with three 8 MB arrays (24 MB
+total) that must be read/written from memory. There is almost no
+actual computation to parallelize; the true bottleneck is memory
+bandwidth, which is shared across all CPU cores regardless of how many
+threads are used. Meanwhile, splitting the work into strips and
+distributing them across threads adds real, measurable overhead (thread
+creation, scheduling, per-strip bookkeeping) that this workload is too
+small and too memory-bound to pay back.
+
+This mirrors a finding from Lab 03 (Exercise 3): OpenMP parallelization
+only pays off when there is enough real computational work per unit of
+data to outweigh threading overhead. For simple, memory-bound
+element-wise operations like this one, a well-vectorized serial loop
+(which modern compilers already auto-vectorize at -O2) can outperform
+an explicitly parallelized version, since the parallel version pays
+threading overhead without any extra compute-bound benefit to offset it.

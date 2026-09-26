@@ -1,0 +1,4 @@
+Serial:              Time = 0.0046 sec
+Strip-mined parallel: Time = 0.0169 sec (strip size = 8, 125000 strips)
+
+Speedup: 0.27x (i.e. the parallel version is ~3.7x SLOWER than serial)
