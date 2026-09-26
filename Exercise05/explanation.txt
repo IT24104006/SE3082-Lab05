@@ -1,0 +1,34 @@
+Exercise 5: Parallelizing recursive Fibonacci with OpenMP tasks
+
+Approach:
+Each recursive call fib(n-1) and fib(n-2) is independent, so they can run
+as separate OpenMP tasks (#pragma omp task), with #pragma omp taskwait
+ensuring both finish before their results are combined. Tasks must be
+created inside a parallel region, but only one thread should kick off the
+initial call, so #pragma omp parallel + #pragma omp single wraps the
+first call to fib().
+
+Result 1: Naive task version is much SLOWER than serial (22.2092 sec vs
+0.0107 sec - over 2000x slower), despite producing the correct answer
+(9227465, matching the serial result).
+
+Why: fib(35) makes around 30 million recursive calls. The naive version
+creates an OpenMP task for every single call, including trivial base
+cases like fib(1) or fib(0), which just return immediately. Creating and
+scheduling a task has real overhead (far more than the work of a base
+case itself), so with millions of tasks being created, that overhead
+completely dominates and swamps any benefit from running them in
+parallel. This is a classic example of task granularity being too fine.
+
+Fix: a cutoff was added - below n=20, the function falls back to plain
+serial recursion (no task creation at all); tasks are only created for
+larger n, where the amount of work per task is actually substantial. This
+brought the time down to 0.0583 sec, about 380x faster than the naive
+task version, and much closer to the serial time.
+
+The cutoff version is still slightly slower than pure serial (0.0583 sec
+vs 0.0107 sec), because fib(35) is small enough that even the reduced
+number of tasks, plus normal thread/parallel-region startup overhead,
+isn't fully paid back by the parallelism gained. This demonstrates that
+task-based parallelism only pays off when individual tasks do enough
+real work to outweigh the fixed cost of creating and scheduling them.
