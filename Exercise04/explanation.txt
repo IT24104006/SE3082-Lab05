@@ -1,0 +1,25 @@
+Exercise 4: Nested loop threading, with and without collapse(2)
+
+Without collapse(2):
+#pragma omp parallel for only parallelizes the OUTER loop (r, 5 values).
+Only 5 threads (0-4) were used, one per value of r; each thread then
+executed its entire inner loop (all 10 values of k) sequentially, by
+itself. Even though 12 threads/cores were available, 7 sat idle -
+the work was capped at 5-way parallelism because that is all the outer
+loop offers.
+
+With collapse(2):
+#pragma omp parallel for collapse(2) merges the two nested loops into a
+single logical loop of 5 x 10 = 50 iterations, and OpenMP distributes
+ALL 50 (r,k) pairs across however many threads are available. This run
+used all 12 threads (0-11), each handling only about 4 iterations. The
+iterations assigned to a single thread are no longer confined to one
+value of r - e.g. thread 4 handled both (r=2, k=9-10) and (r=3, k=1-2),
+crossing the r boundary, showing the two loops were truly merged into
+one iteration space before being divided among threads rather than
+being split loop-by-loop.
+
+Conclusion: collapse(2) is useful when the outer loop alone does not
+have enough iterations to keep all available threads busy (5 outer
+iterations vs 12 threads here) - collapsing exposes the full 50-way
+parallelism of the nested loops instead of being limited to 5-way.
