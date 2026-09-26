@@ -1,0 +1,23 @@
+Exercise 1: #pragma omp barrier
+
+The program creates one thread per available core (12 on my machine, as
+determined by
+gcc's default OpenMP thread count) inside a single parallel region. Each
+thread prints "thread # N", then hits #pragma omp barrier, then prints
+"Outside Barrier # N" and "Hi again from thread # N".
+
+How #pragma omp barrier works:
+A barrier is a synchronized point - all threads in the parallel
+region must hit the barrier before any thread is allowed to proceed
+past the barrier. The output shows this exactly - all 12 "thread # N"
+lines are first, in an unpredictable order (due to race conditions in
+concurrently-running threads that all print to stdout on different
+threads) and only after every thread has printed their first line do
+any "Outside Barrier" lines print. Without the barrier, threads could
+print the "Outside Barrier" line before other threads even printed their
+first line, since there would be nothing forcing them to wait for each
+other.
+
+After the barrier, thread ordering becomes unpredictable again for
+the last two print statements, since there's no further synchronization
+- each thread proceeds independently once released from the barrier.
