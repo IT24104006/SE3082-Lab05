@@ -1,0 +1,35 @@
+Exercise 3: #pragma omp master
+
+Note: the sheet’s original code had a bug in it – the return 0; line was
+placed inside the parallel region (before the closing brace), which means
+only the main thread would reach it and the program would have undefined
+behavior for the others – it was fixed by placing return 0; after the
+closing brace of the parallel region, like in Exercises 1 and 2.
+
+How #pragma omp master works:
+Inside of a parallel region, #pragma omp master specifies a block
+of code to be executed EXCLUSIVELY by the master thread (thread 0), unlike
+the #pragma omp single from Exercise 2 – each time it encounters such a
+
+block, the master thread runs it while the others wait until it finishes,
+
+while with #pragma omp single, it’s whichever thread gets to it first
+that will run the block, and that can change depending on the execution.
+As can be seen from the output, only Thread 0 printed the “Inside Master
+# 0” message and the “Exiting Master” message – the other 11 threads did
+not enter the master block at all.
+The difference between master and single is that master does not have
+an implicit barrier at the end of its block – threads that encounter it
+will execute it if they are the master thread, then proceed to the next
+statements right away, while single effectively has a barrier at the end
+of its block – the other threads will wait until the one that entered the
+single block exits it before proceeding. This can be seen in how the
+“Hi again” lines were printed – in the output from Exercise 2, “Hi again
+from thread # 7” is immediately after the line “thread # 7” – there is no
+delay between them, while with the single pragma, all the “Hi again” lines
+were printed after the “Exiting Single” line. Thus, master is useful for
+cases where the other threads do not need to wait for the master one to
+finish executing the block – for example, if it contains a call to a
+function that prints a header line, other threads do not need to wait for
+it to print the header before they can print their own data – unlike with
+single.
